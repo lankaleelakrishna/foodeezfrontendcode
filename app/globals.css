@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Gold accent (switchable palette) ─────────────────────── */
+:root {
+  --accent:        #C9A15B;
+  --accent-2:      #A07830;
+  --accent-bright: #E8BE70;
+  --accent-muted:  rgba(201, 161, 91, 0.10);
+  --accent-glow:   rgba(201, 161, 91, 0.22);
+}
+html[data-palette="sapphire"] { --accent:#3B82F6; --accent-2:#1d4ed8; --accent-bright:#60a5fa; --accent-muted:rgba(59,130,246,0.10); }
+html[data-palette="emerald"]  { --accent:#10B981; --accent-2:#059669; --accent-bright:#34d399; --accent-muted:rgba(16,185,129,0.10); }
+
+/* ── Light mode ───────────────────────────────────────────── */
+:root {
+  --bg:         #F2EBE0;
+  --surface:    #FDFAF5;
+  --surface-2:  #EBE3D8;
+  --border:     #D9CFBF;
+  --border-sub: #E6DFD2;
+
+  --tx:         #1A110A;
+  --tx-2:       #6B5C48;
+  --tx-3:       #9E8C78;
+
+  /* Sidebar is always dark in both modes */
+  --sb-bg:      #120E0A;
+  --sb-2:       #1C1712;
+  --sb-bdr:     #2A221A;
+  --sb-tx:      #EAE0D0;
+  --sb-tx2:     #7A6A58;
+  --sb-hover:   #201A14;
+  --sb-active:  rgba(201, 161, 91, 0.13);
+
+  --hdr-bg:     #FDFAF5;
+  --hdr-bdr:    #D9CFBF;
+}
+
+/* ── Dark mode ───────────────────────────────────────────── */
+.dark {
+  --bg:         #0D0906;
+  --surface:    #151008;
+  --surface-2:  #1D1710;
+  --border:     #2C2018;
+  --border-sub: #221A12;
+
+  --tx:         #F0E4CC;
+  --tx-2:       #9A8870;
+  --tx-3:       #68584A;
+
+  --hdr-bg:     #110D09;
+  --hdr-bdr:    #2C2018;
+}
+
+/* ── Base ──────────────────────────────────────────────────── */
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--tx);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* { box-sizing: border-box; }
+
+/* ── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--tx-3); }
+
+/* ── Colour transitions ──────────────────────────────────── */
+html { transition: background-color 0.2s ease; }
+body { transition: background-color 0.2s ease, color 0.2s ease; }
+
+/* ── Gold shimmer ─────────────────────────────────────────── */
+@keyframes gold-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+.gold-text {
+  background: linear-gradient(90deg, var(--accent-2) 0%, var(--accent-bright) 45%, var(--accent-2) 100%);
+  background-size: 200% auto;
+  animation: gold-shimmer 4s linear infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
