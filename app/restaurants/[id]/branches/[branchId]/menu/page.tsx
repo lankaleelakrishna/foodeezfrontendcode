@@ -14,9 +14,22 @@ type MenuItem = {
   id: string; name: string; description?: string;
   price: number; currency: string; isVisible: boolean; isInStock: boolean;
   category: Category;
+  pricingRules?: PricingRule[];
 };
 
-type ScanItem = { name: string; description: string; price: string; currency: string };
+type ScanItem = { 
+  name: string; 
+  description?: string; 
+  price: string; 
+  currency: string; 
+  discount?: {
+    valueType: MenuPricingValueType;
+    value: string;
+    title?: string;
+    startsAt?: string;
+    endsAt?: string;
+  };
+};
 type ScanCategory = { name: string; displayName: string; items: ScanItem[] };
 
 type Addon = {
@@ -379,6 +392,35 @@ function ScanPanel({ branchId, onImported }: { branchId: string; onImported: () 
           : c)
       : prev);
 
+  const updateItemDiscount = (ci: number, ii: number, field: keyof NonNullable<ScanItem['discount']>, value: string) =>
+    setExtracted((prev) => prev
+      ? prev.map((c, i) => i === ci
+          ? {
+            ...c,
+            items: c.items.map((it, j) => j === ii ? {
+              ...it,
+              discount: {
+                ...(it.discount ?? { valueType: 'PERCENTAGE', value: '', title: '', startsAt: '', endsAt: '' }),
+                [field]: value,
+              },
+            } : it),
+          }
+          : c)
+      : prev);
+
+  const toggleItemDiscount = (ci: number, ii: number) =>
+    setExtracted((prev) => prev
+      ? prev.map((c, i) => i === ci
+          ? {
+            ...c,
+            items: c.items.map((it, j) => j === ii ? {
+              ...it,
+              discount: it.discount ? undefined : { valueType: 'PERCENTAGE', value: '', title: '', startsAt: '', endsAt: '' },
+            } : it),
+          }
+          : c)
+      : prev);
+
   const addItem = (ci: number) =>
     setExtracted((prev) => prev
       ? prev.map((c, i) => i === ci
@@ -409,12 +451,24 @@ function ScanPanel({ branchId, onImported }: { branchId: string; onImported: () 
           displayName: c.displayName.trim() || c.name,
           items: c.items
             .filter((it) => it.name.trim())
-            .map((it) => ({
-              name: it.name.trim(),
-              description: it.description.trim() || undefined,
-              price: Number(it.price) || 0,
-              currency: it.currency || 'INR',
-            })),
+            .map((it) => {
+          const item: any = {
+            name: it.name.trim(),
+            description: it.description?.trim() || undefined,
+            price: Number(it.price) || 0,
+            currency: it.currency || 'INR',
+          };
+          if (it.discount && Number(it.discount.value) > 0) {
+            item.discount = {
+              valueType: it.discount.valueType,
+              value: Number(it.discount.value) || 0,
+              title: it.discount.title?.trim() || undefined,
+              startsAt: it.discount.startsAt || undefined,
+              endsAt: it.discount.endsAt || undefined,
+            };
+          }
+          return item;
+        }).filter((it) => it.name),
         })).filter((c) => c.name && c.displayName),
       };
       await api.post(`/branches/${branchId}/menu-bulk-upload`, payload);
@@ -522,23 +576,62 @@ function ScanPanel({ branchId, onImported }: { branchId: string; onImported: () 
               </div>
 
               {cat.items.map((item, ii) => (
-                <div key={ii} className="flex items-start gap-2 rounded-xl bg-white border border-slate-200 p-3">
-                  <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_1fr_80px_60px]">
-                    <input className={INPUT} placeholder="Item name" value={item.name}
-                      onChange={(e) => updateItem(ci, ii, 'name', e.target.value)} />
-                    <input className={INPUT} placeholder="Description (optional)" value={item.description}
-                      onChange={(e) => updateItem(ci, ii, 'description', e.target.value)} />
-                    <input className={INPUT} placeholder="Price" type="number" min="0" step="0.01" value={item.price}
-                      onChange={(e) => updateItem(ci, ii, 'price', e.target.value)} />
-                    <input className={INPUT} placeholder="INR" value={item.currency}
-                      onChange={(e) => updateItem(ci, ii, 'currency', e.target.value.toUpperCase())} />
+                <div key={ii} className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1 grid gap-2 sm:grid-cols-[1fr_1fr_80px_60px]">
+                      <input className={INPUT} placeholder="Item name" value={item.name}
+                        onChange={(e) => updateItem(ci, ii, 'name', e.target.value)} />
+                      <input className={INPUT} placeholder="Description (optional)" value={item.description}
+                        onChange={(e) => updateItem(ci, ii, 'description', e.target.value)} />
+                      <input className={INPUT} placeholder="Price" type="number" min="0" step="0.01" value={item.price}
+                        onChange={(e) => updateItem(ci, ii, 'price', e.target.value)} />
+                      <input className={INPUT} placeholder="INR" value={item.currency}
+                        onChange={(e) => updateItem(ci, ii, 'currency', e.target.value.toUpperCase())} />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <button type="button" onClick={() => toggleItemDiscount(ci, ii)}
+                        className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-700 hover:bg-white transition">
+                        {item.discount ? 'Remove discount' : '+ Add discount'}
+                      </button>
+                      <button type="button" onClick={() => removeItem(ci, ii)}
+                        className="mt-0.5 rounded-xl p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition">
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
-                  <button type="button" onClick={() => removeItem(ci, ii)}
-                    className="mt-0.5 rounded-xl p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+                  {item.discount && (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 grid gap-3 sm:grid-cols-2">
+                      <label className="block space-y-2">
+                        <span className="text-xs font-medium text-slate-600">Discount type</span>
+                        <select value={item.discount.valueType} onChange={(e) => updateItemDiscount(ci, ii, 'valueType', e.target.value)} className={INPUT}>
+                          <option value="PERCENTAGE">Percentage</option>
+                          <option value="FLAT">Flat amount</option>
+                        </select>
+                      </label>
+                      <label className="block space-y-2">
+                        <span className="text-xs font-medium text-slate-600">Amount</span>
+                        <input className={INPUT} type="number" step="0.01" min="0" value={item.discount.value}
+                          onChange={(e) => updateItemDiscount(ci, ii, 'value', e.target.value)} />
+                      </label>
+                      <label className="block space-y-2">
+                        <span className="text-xs font-medium text-slate-600">Title</span>
+                        <input className={INPUT} value={item.discount.title || ''}
+                          onChange={(e) => updateItemDiscount(ci, ii, 'title', e.target.value)} />
+                      </label>
+                      <label className="block space-y-2">
+                        <span className="text-xs font-medium text-slate-600">Ends at</span>
+                        <input className={INPUT} type="date" value={item.discount.endsAt || ''}
+                          onChange={(e) => updateItemDiscount(ci, ii, 'endsAt', e.target.value)} />
+                      </label>
+                      <label className="block space-y-2 sm:col-span-2">
+                        <span className="text-xs font-medium text-slate-600">Starts at</span>
+                        <input className={INPUT} type="date" value={item.discount.startsAt || ''}
+                          onChange={(e) => updateItemDiscount(ci, ii, 'startsAt', e.target.value)} />
+                      </label>
+                    </div>
+                  )}
                 </div>
               ))}
 
@@ -565,8 +658,6 @@ function ScanPanel({ branchId, onImported }: { branchId: string; onImported: () 
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-import { useParams } from 'next/navigation';
-
 export default function BranchMenuPage() {
   const router = useRouter();
   const params = useParams();
@@ -584,6 +675,12 @@ export default function BranchMenuPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [isVisible, setIsVisible] = useState(true);
   const [isInStock, setIsInStock] = useState(true);
+  const [discountEnabled, setDiscountEnabled] = useState(false);
+  const [discountValueType, setDiscountValueType] = useState<MenuPricingValueType>('PERCENTAGE');
+  const [discountValue, setDiscountValue] = useState('');
+  const [discountTitle, setDiscountTitle] = useState('');
+  const [discountStartsAt, setDiscountStartsAt] = useState('');
+  const [discountEndsAt, setDiscountEndsAt] = useState('');
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editItemName, setEditItemName] = useState('');
   const [editItemDescription, setEditItemDescription] = useState('');
@@ -636,11 +733,24 @@ export default function BranchMenuPage() {
     e.preventDefault();
     if (!selectedCategoryId) { setError('Please select a category first.'); return; }
     try {
-      await api.post(`/branches/${branchId}/menu-items`, {
+      const payload: any = {
         categoryId: selectedCategoryId, name: itemName, description: itemDescription,
         price: Number(itemPrice), currency: itemCurrency, isVisible, isInStock,
-      });
-      setItemName(''); setItemDescription(''); setItemPrice(''); setIsVisible(true); setIsInStock(true);
+      };
+      if (discountEnabled && Number(discountValue) > 0) {
+        payload.discount = {
+          valueType: discountValueType,
+          value: Number(discountValue),
+          title: discountTitle || undefined,
+          startsAt: discountStartsAt || undefined,
+          endsAt: discountEndsAt || undefined,
+        };
+      }
+      await api.post(`/branches/${branchId}/menu-items`, payload);
+      setItemName(''); setItemDescription(''); setItemPrice(''); setItemCurrency('INR');
+      setIsVisible(true); setIsInStock(true);
+      setDiscountEnabled(false); setDiscountValueType('PERCENTAGE'); setDiscountValue('');
+      setDiscountTitle(''); setDiscountStartsAt(''); setDiscountEndsAt('');
       setMessage('Item added.'); setError('');
       fetchMenu();
     } catch { setError('Unable to create item.'); setMessage(''); }
@@ -650,6 +760,25 @@ export default function BranchMenuPage() {
     setEditingItemId(item.id);
     setEditItemName(item.name); setEditItemDescription(item.description ?? '');
     setEditItemPrice(String(item.price)); setEditItemCurrency(item.currency);
+    
+    // Populate discount fields if item has a discount pricing rule
+    const discountRule = item.pricingRules?.find((rule) => rule.ruleType === 'DISCOUNT');
+    if (discountRule) {
+      setDiscountEnabled(true);
+      setDiscountValueType(discountRule.valueType);
+      setDiscountValue(String(discountRule.value));
+      setDiscountTitle(discountRule.title ?? '');
+      setDiscountStartsAt(discountRule.startsAt ?? '');
+      setDiscountEndsAt(discountRule.endsAt ?? '');
+    } else {
+      setDiscountEnabled(false);
+      setDiscountValueType('PERCENTAGE');
+      setDiscountValue('');
+      setDiscountTitle('');
+      setDiscountStartsAt('');
+      setDiscountEndsAt('');
+    }
+    
     setError(''); setMessage('');
   };
 
@@ -657,11 +786,44 @@ export default function BranchMenuPage() {
     e.preventDefault();
     if (!editingItemId) return;
     try {
+      // Update basic item fields
       await api.patch(`/menu-items/${editingItemId}`, {
         name: editItemName, description: editItemDescription,
         price: Number(editItemPrice), currency: editItemCurrency,
       });
+
+      // Handle discount pricing rule
+      const existingDiscountRule = items.find(item => item.id === editingItemId)?.pricingRules?.find(rule => rule.ruleType === 'DISCOUNT');
+      
+      if (discountEnabled && Number(discountValue) > 0) {
+        const discountData = {
+          ruleType: 'DISCOUNT' as MenuPricingRuleType,
+          valueType: discountValueType,
+          value: Number(discountValue),
+          title: discountTitle || undefined,
+          startsAt: discountStartsAt || undefined,
+          endsAt: discountEndsAt || undefined,
+        };
+
+        if (existingDiscountRule) {
+          // Update existing discount rule
+          await menuApi.updatePricingRule(existingDiscountRule.id, discountData);
+        } else {
+          // Create new discount rule
+          await menuApi.createPricingRule(editingItemId, discountData);
+        }
+      } else if (existingDiscountRule) {
+        // Disable discount by setting it inactive
+        await menuApi.updatePricingRule(existingDiscountRule.id, { isActive: false });
+      }
+
       setEditingItemId(null);
+      setDiscountEnabled(false);
+      setDiscountValueType('PERCENTAGE');
+      setDiscountValue('');
+      setDiscountTitle('');
+      setDiscountStartsAt('');
+      setDiscountEndsAt('');
       setMessage('Item updated.'); setError('');
       fetchMenu();
     } catch { setError('Unable to update item.'); setMessage(''); }
@@ -772,15 +934,50 @@ export default function BranchMenuPage() {
                         className={INPUT} required />
                     </label>
                   </div>
-                  <div className="flex gap-6">
-                    <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                      <input type="checkbox" checked={isVisible} onChange={(e) => setIsVisible(e.target.checked)}
-                        className="h-4 w-4 rounded border-slate-300" /> Visible
-                    </label>
-                    <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                      <input type="checkbox" checked={isInStock} onChange={(e) => setIsInStock(e.target.checked)}
-                        className="h-4 w-4 rounded border-slate-300" /> In stock
-                    </label>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                        <input type="checkbox" checked={isVisible} onChange={(e) => setIsVisible(e.target.checked)}
+                          className="h-4 w-4 rounded border-slate-300" /> Visible
+                      </label>
+                      <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                        <input type="checkbox" checked={isInStock} onChange={(e) => setIsInStock(e.target.checked)}
+                          className="h-4 w-4 rounded border-slate-300" /> In stock
+                      </label>
+                      <button type="button" onClick={() => setDiscountEnabled((prev) => !prev)}
+                        className="rounded-2xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700 hover:bg-white transition">
+                        {discountEnabled ? 'Remove discount' : 'Add discount'}
+                      </button>
+                    </div>
+                    {discountEnabled && (
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <label className="block space-y-2">
+                            <span className="text-sm font-medium text-slate-700">Discount type</span>
+                            <select value={discountValueType} onChange={(e) => setDiscountValueType(e.target.value as MenuPricingValueType)}
+                              className={INPUT}>
+                              <option value="PERCENTAGE">Percentage</option>
+                              <option value="FLAT">Flat amount</option>
+                            </select>
+                          </label>
+                          <label className="block space-y-2">
+                            <span className="text-sm font-medium text-slate-700">Discount amount</span>
+                            <input value={discountValue} onChange={(e) => setDiscountValue(e.target.value)}
+                              type="number" step="0.01" min="0" className={INPUT} placeholder="10" />
+                          </label>
+                        </div>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <label className="block space-y-2">
+                            <span className="text-sm font-medium text-slate-700">Title</span>
+                            <input value={discountTitle} onChange={(e) => setDiscountTitle(e.target.value)} className={INPUT} placeholder="Weekend sale" />
+                          </label>
+                          <label className="block space-y-2">
+                            <span className="text-sm font-medium text-slate-700">Valid until</span>
+                            <input value={discountEndsAt} onChange={(e) => setDiscountEndsAt(e.target.value)} type="date" className={INPUT} />
+                          </label>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <button type="submit" className="rounded-2xl bg-slate-900 px-5 py-3 text-sm text-white hover:bg-slate-700">
                     Add item
@@ -815,9 +1012,52 @@ export default function BranchMenuPage() {
                       <input value={editItemCurrency} onChange={(e) => setEditItemCurrency(e.target.value)} className={INPUT} required />
                     </label>
                   </div>
+                  <div className="space-y-3">
+                    <button type="button" onClick={() => setDiscountEnabled((prev) => !prev)}
+                      className="rounded-2xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700 hover:bg-white transition">
+                      {discountEnabled ? 'Remove discount' : 'Add discount'}
+                    </button>
+                    {discountEnabled && (
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <label className="block space-y-2">
+                            <span className="text-sm font-medium text-slate-700">Discount type</span>
+                            <select value={discountValueType} onChange={(e) => setDiscountValueType(e.target.value as MenuPricingValueType)}
+                              className={INPUT}>
+                              <option value="PERCENTAGE">Percentage</option>
+                              <option value="FLAT">Flat amount</option>
+                            </select>
+                          </label>
+                          <label className="block space-y-2">
+                            <span className="text-sm font-medium text-slate-700">Discount amount</span>
+                            <input value={discountValue} onChange={(e) => setDiscountValue(e.target.value)}
+                              type="number" step="0.01" min="0" className={INPUT} placeholder="10" />
+                          </label>
+                        </div>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <label className="block space-y-2">
+                            <span className="text-sm font-medium text-slate-700">Title</span>
+                            <input value={discountTitle} onChange={(e) => setDiscountTitle(e.target.value)} className={INPUT} placeholder="Weekend sale" />
+                          </label>
+                          <label className="block space-y-2">
+                            <span className="text-sm font-medium text-slate-700">Valid until</span>
+                            <input value={discountEndsAt} onChange={(e) => setDiscountEndsAt(e.target.value)} type="date" className={INPUT} />
+                          </label>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <div className="flex flex-wrap gap-3">
                     <button type="submit" className="rounded-2xl bg-slate-900 px-5 py-3 text-sm text-white hover:bg-slate-700">Save changes</button>
-                    <button type="button" onClick={() => setEditingItemId(null)}
+                    <button type="button" onClick={() => {
+                      setEditingItemId(null);
+                      setDiscountEnabled(false);
+                      setDiscountValueType('PERCENTAGE');
+                      setDiscountValue('');
+                      setDiscountTitle('');
+                      setDiscountStartsAt('');
+                      setDiscountEndsAt('');
+                    }}
                       className="rounded-2xl border border-slate-300 px-5 py-3 text-sm text-slate-700 hover:bg-slate-50">Cancel</button>
                   </div>
                 </form>
@@ -882,78 +1122,99 @@ export default function BranchMenuPage() {
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                              {catItems.map((item, idx) => (
-                                <React.Fragment key={item.id}>
-                                  <tr className={`transition hover:bg-slate-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                                    <td className="px-5 py-3.5 font-medium text-slate-900 whitespace-nowrap">
-                                      {item.name}
-                                    </td>
-                                    <td className="px-5 py-3.5 text-slate-500 max-w-xs">
-                                      <span className="line-clamp-2">{item.description || <span className="italic text-slate-300">—</span>}</span>
-                                    </td>
-                                    <td className="px-5 py-3.5 text-right font-semibold text-slate-800 whitespace-nowrap">
-                                      {item.currency} {Number(item.price).toFixed(2)}
-                                    </td>
-                                    <td className="px-5 py-3.5 text-center">
-                                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                                        item.isInStock ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-600'
-                                      }`}>
-                                        {item.isInStock ? 'In stock' : 'Out of stock'}
-                                      </span>
-                                    </td>
-                                    <td className="px-5 py-3.5 text-center">
-                                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                                        item.isVisible ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
-                                      }`}>
-                                        {item.isVisible ? 'Visible' : 'Hidden'}
-                                      </span>
-                                    </td>
-                                    <td className="px-5 py-3.5 text-right">
-                                      <div className="flex items-center justify-end gap-1.5">
-                                        {canWrite && (
-                                          <>
-                                            <button
-                                              type="button"
-                                              onClick={() => startEditItem(item)}
-                                              className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 transition"
-                                            >
-                                              Edit
-                                            </button>
-                                            <button
-                                              type="button"
-                                              onClick={() => toggleItemState(item, 'isInStock')}
-                                              className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 transition"
-                                            >
-                                              {item.isInStock ? 'Out of stock' : 'Restock'}
-                                            </button>
-                                            <button
-                                              type="button"
-                                              onClick={() => toggleItemState(item, 'isVisible')}
-                                              className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 transition"
-                                            >
-                                              {item.isVisible ? 'Hide' : 'Show'}
-                                            </button>
-                                          </>
-                                        )}
-                                        <button
-                                          type="button"
-                                          onClick={() => setExpandedItemId((prev) => prev === item.id ? null : item.id)}
-                                          className={`rounded-lg border px-2.5 py-1 text-xs transition ${expandedItemId === item.id ? 'border-slate-800 bg-slate-800 text-white' : 'border-slate-200 text-slate-600 hover:bg-slate-100'}`}
-                                        >
-                                          {expandedItemId === item.id ? 'Close' : 'Addons / Rules'}
-                                        </button>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                  {expandedItemId === item.id && (
-                                    <tr>
-                                      <td colSpan={6} className="p-0">
-                                        <ItemDetailPanel itemId={item.id} itemName={item.name} canWrite={canWrite} />
+                              {catItems.map((item, idx) => {
+                                const discount = item.pricingRules?.find((rule) => rule.ruleType === 'DISCOUNT');
+                                const discountLabel = discount
+                                  ? discount.valueType === 'PERCENTAGE'
+                                    ? `${discount.value}% off`
+                                    : `₹${discount.value} off`
+                                  : null;
+                                const itemDescription = item.description ? (
+                                  item.description
+                                ) : (
+                                  <span className="italic text-slate-300">—</span>
+                                );
+
+                                return (
+                                  <React.Fragment key={item.id}>
+                                    <tr className={`transition hover:bg-slate-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                                      <td className="px-5 py-3.5 font-medium text-slate-900 whitespace-nowrap">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <span>{item.name}</span>
+                                          {discountLabel && (
+                                            <span className="ml-2 inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700">
+                                              {discountLabel}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </td>
+                                      <td className="px-5 py-3.5 text-slate-500 max-w-xs">
+                                        <span className="line-clamp-2">{itemDescription}</span>
+                                      </td>
+                                      <td className="px-5 py-3.5 text-right font-semibold text-slate-800 whitespace-nowrap">
+                                        {item.currency} {Number(item.price).toFixed(2)}
+                                      </td>
+                                      <td className="px-5 py-3.5 text-center">
+                                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                                          item.isInStock ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-600'
+                                        }`}>
+                                          {item.isInStock ? 'In stock' : 'Out of stock'}
+                                        </span>
+                                      </td>
+                                      <td className="px-5 py-3.5 text-center">
+                                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                                          item.isVisible ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
+                                        }`}>
+                                          {item.isVisible ? 'Visible' : 'Hidden'}
+                                        </span>
+                                      </td>
+                                      <td className="px-5 py-3.5 text-right">
+                                        <div className="flex items-center justify-end gap-1.5">
+                                          {canWrite && (
+                                            <>
+                                              <button
+                                                type="button"
+                                                onClick={() => startEditItem(item)}
+                                                className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 transition"
+                                              >
+                                                Edit
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => toggleItemState(item, 'isInStock')}
+                                                className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 transition"
+                                              >
+                                                {item.isInStock ? 'Out of stock' : 'Restock'}
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => toggleItemState(item, 'isVisible')}
+                                                className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 transition"
+                                              >
+                                                {item.isVisible ? 'Hide' : 'Show'}
+                                              </button>
+                                            </>
+                                          )}
+                                          <button
+                                            type="button"
+                                            onClick={() => setExpandedItemId((prev) => prev === item.id ? null : item.id)}
+                                            className={`rounded-lg border px-2.5 py-1 text-xs transition ${expandedItemId === item.id ? 'border-slate-800 bg-slate-800 text-white' : 'border-slate-200 text-slate-600 hover:bg-slate-100'}`}
+                                          >
+                                            {expandedItemId === item.id ? 'Close' : 'Addons / Rules'}
+                                          </button>
+                                        </div>
                                       </td>
                                     </tr>
-                                  )}
-                                </React.Fragment>
-                              ))}
+                                    {expandedItemId === item.id && (
+                                      <tr>
+                                        <td colSpan={6} className="p-0">
+                                          <ItemDetailPanel itemId={item.id} itemName={item.name} canWrite={canWrite} />
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </React.Fragment>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>

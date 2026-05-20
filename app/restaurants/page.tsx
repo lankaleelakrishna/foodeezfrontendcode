@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { api } from '../../lib/api';
 import { getUserRole } from '../../lib/auth';
 import AuthGuard from '../components/AuthGuard';
@@ -28,6 +29,7 @@ function SkeletonCard() {
 }
 
 export default function RestaurantsPage() {
+  const searchParams = useSearchParams();
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -44,6 +46,11 @@ export default function RestaurantsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    const status = searchParams?.get('status') ?? 'all';
+    setStatusFilter(status);
+  }, [searchParams]);
+
   const cuisines = Array.from(new Set(restaurants.flatMap((r) => r.cuisineTags ?? []))).sort();
   const filteredRestaurants = restaurants.filter((restaurant) => {
     const lowerQuery = query.toLowerCase();
@@ -51,7 +58,9 @@ export default function RestaurantsPage() {
       || restaurant.ownerName.toLowerCase().includes(lowerQuery)
       || restaurant.email.toLowerCase().includes(lowerQuery);
 
-    const matchesStatus = statusFilter === 'all' || restaurant.status === statusFilter;
+    const matchesStatus = statusFilter === 'all'
+      || (statusFilter === 'onboarding' && (restaurant.status === 'pending' || restaurant.status === 'review'))
+      || restaurant.status === statusFilter;
     const matchesCuisine = cuisineFilter === 'all'
       || (restaurant.cuisineTags ?? []).includes(cuisineFilter);
 
@@ -114,6 +123,7 @@ export default function RestaurantsPage() {
                   <option value="active">Active</option>
                   <option value="pending">Pending</option>
                   <option value="review">Review</option>
+                  <option value="onboarding">In Onboarding</option>
                   <option value="rejected">Rejected</option>
                 </select>
               </label>

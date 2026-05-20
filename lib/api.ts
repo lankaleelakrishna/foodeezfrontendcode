@@ -15,10 +15,9 @@ api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem(TOKEN_KEY);
     if (token) {
-      config.headers = {
-        ...config.headers,
-        Authorization: `Bearer ${token}`,
-      };
+      if (config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
   }
   return config;
@@ -29,6 +28,33 @@ export const setAuthToken = (token: string | null) => {
     api.defaults.headers.common.Authorization = `Bearer ${token}`;
   } else {
     delete api.defaults.headers.common.Authorization;
+  }
+};
+
+// ── Customer axios instance (separate token) ───────────────────────────────────
+
+export const CUSTOMER_TOKEN_KEY = 'customer_auth_token';
+
+export const customerApi = axios.create({
+  baseURL: defaultApiBaseUrl,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+customerApi.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem(CUSTOMER_TOKEN_KEY);
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
+export const setCustomerAuthToken = (token: string | null) => {
+  if (token) {
+    customerApi.defaults.headers.common.Authorization = `Bearer ${token}`;
+  } else {
+    delete customerApi.defaults.headers.common.Authorization;
   }
 };
 
@@ -294,6 +320,13 @@ export const menuApi = {
     api.post(`/branches/${branchId}/menu-items`, data),
   updateItem: (itemId: string, data: Record<string, any>) =>
     api.patch(`/menu-items/${itemId}`, data),
+  createDiscount: (itemId: string, data: {
+    valueType: MenuPricingValueType;
+    value: number;
+    title?: string;
+    startsAt?: string;
+    endsAt?: string;
+  }) => api.post(`/menu-items/${itemId}/discounts`, data),
 
   // Addons
   listAddons: (itemId: string) =>
@@ -341,4 +374,296 @@ export const documentsApi = {
     api.get(`/restaurants/${restaurantId}/documents`),
   upload: (restaurantId: string, data: { type: DocumentType; s3Key: string; filename: string }) =>
     api.post(`/restaurants/${restaurantId}/documents`, data),
+};
+
+// ── Customer Auth API ──────────────────────────────────────────────────────────
+
+export type OtpPurpose = 'SIGNUP' | 'LOGIN' | 'RESET_PASSWORD';
+
+export type SendOtpPayload =
+  | { email: string; phone?: never; purpose: 'SIGNUP' | 'LOGIN' }
+  | { phone: string; email?: never; purpose: 'RESET_PASSWORD' };
+
+export type CustomerSignupPayload = {
+  email: string;
+  phone: string;
+  otp: string;
+  name?: string;
+  referralCode?: string;
+  deviceId?: string;
+  deviceName?: string;
+};
+
+export type CustomerLoginPayload = {
+  email: string;
+  otp: string;
+  deviceId?: string;
+  deviceName?: string;
+  deviceOs?: string;
+  appVersion?: string;
+};
+
+export type RefreshTokenPayload = {
+  refreshToken: string;
+  deviceId: string;
+};
+
+export type ResetPasswordPayload = {
+  phone: string;
+  otp: string;
+  newPassword: string;
+};
+
+export const customerAuthApi = {
+  // Public — no token required
+  sendOtp: (data: SendOtpPayload) =>
+    api.post('/customer/auth/send-otp', data),
+  signup: (data: CustomerSignupPayload) =>
+    api.post('/customer/auth/signup', data),
+  login: (data: CustomerLoginPayload) =>
+    api.post('/customer/auth/login', data),
+  refresh: (data: RefreshTokenPayload) =>
+    api.post('/customer/auth/refresh', data),
+  resetPassword: (data: ResetPasswordPayload) =>
+    api.post('/customer/auth/reset-password', data),
+  // Guarded — requires customer JWT
+  logout: (deviceId?: string) =>
+    customerApi.post('/customer/auth/logout', { deviceId: deviceId ?? 'default' }),
+  logoutAll: () =>
+    customerApi.post('/customer/auth/logout-all'),
+  getSessions: () =>
+    customerApi.get('/customer/auth/sessions'),
+  revokeSession: (deviceId: string) =>
+    customerApi.delete(`/customer/auth/sessions/${deviceId}`),
+};
+
+// ── Customer Discovery API ─────────────────────────────────────────────────────
+
+export type NearbyParams = {
+  lat: number; lng: number; radius?: number; page?: number; limit?: number;
+  cuisine?: string; minRating?: number; maxDeliveryTime?: number;
+  isVeg?: boolean; sortBy?: string;
+};
+
+export const customerDiscoveryApi = {
+  nearby: (params: NearbyParams) =>
+    api.get('/customer/discovery/nearby', { params }),
+  search: (q: string, lat: number, lng: number, page = 1, limit = 20) =>
+    api.get('/customer/discovery/search', { params: { q, lat, lng, page, limit } }),
+  trending: (lat: number, lng: number) =>
+    api.get('/customer/discovery/trending', { params: { lat, lng } }),
+  popularDishes: (lat: number, lng: number) =>
+    api.get('/customer/discovery/popular-dishes', { params: { lat, lng } }),
+  restaurantDetails: (branchId: string) =>
+    api.get(`/customer/discovery/restaurants/${branchId}`),
+  menu: (branchId: string) =>
+    api.get(`/customer/discovery/restaurants/${branchId}/menu`),
+};
+
+// ── Customer Cart API ──────────────────────────────────────────────────────────
+
+export type AddToCartPayload = {
+  menuItemId: string;
+  branchId?: string;
+  quantity: number;
+  selectedAddons?: { addonId: string; quantity: number }[];
+  specialNote?: string;
+};
+
+export const customerCartApi = {
+  get: () =>
+    customerApi.get('/customer/cart'),
+  addItem: (data: AddToCartPayload) =>
+    customerApi.post('/customer/cart/items', data),
+  updateItem: (itemId: string, quantity: number) =>
+    customerApi.patch(`/customer/cart/items/${itemId}`, { quantity }),
+  removeItem: (itemId: string) =>
+    customerApi.delete(`/customer/cart/items/${itemId}`),
+  clear: () =>
+    customerApi.delete('/customer/cart'),
+  applyCoupon: (couponCode: string) =>
+    customerApi.post('/customer/cart/coupon', { couponCode }),
+  removeCoupon: () =>
+    customerApi.delete('/customer/cart/coupon'),
+};
+
+// ── Customer Orders API ────────────────────────────────────────────────────────
+
+export type PlaceOrderPayload = {
+  deliveryAddressId: string;
+  paymentMethod: 'COD' | 'CARD' | 'WALLET' | 'UPI' | 'NET_BANKING';
+  specialInstructions?: string;
+  useWalletBalance?: boolean;
+  scheduledFor?: string;
+};
+
+export type CancelOrderPayload = { reason: string };
+
+export const customerOrdersApi = {
+  place: (data: PlaceOrderPayload) =>
+    customerApi.post('/customer/orders', data),
+  history: (page = 1, limit = 10) =>
+    customerApi.get('/customer/orders', { params: { page, limit } }),
+  get: (orderId: string) =>
+    customerApi.get(`/customer/orders/${orderId}`),
+  cancel: (orderId: string, data: CancelOrderPayload) =>
+    customerApi.post(`/customer/orders/${orderId}/cancel`, data),
+  reorder: (orderId: string) =>
+    customerApi.post(`/customer/orders/${orderId}/reorder`),
+  tracking: (orderId: string) =>
+    customerApi.get(`/customer/orders/${orderId}/tracking`),
+  invoice: (orderId: string) =>
+    customerApi.get(`/customer/orders/${orderId}/invoice`),
+};
+
+// ── Customer Payments API ──────────────────────────────────────────────────────
+
+export type PaymentGateway = 'razorpay' | 'stripe';
+
+export const customerPaymentsApi = {
+  initiatePayment: (orderId: string, gateway: PaymentGateway) =>
+    customerApi.post('/customer/payments/initiate', { orderId, gateway }),
+  verifyPayment: (data: { orderId: string; paymentId: string; signature: string; gateway: PaymentGateway }) =>
+    customerApi.post('/customer/payments/verify', data),
+  wallet: () =>
+    customerApi.get('/customer/payments/wallet'),
+  transactions: (page = 1, limit = 20) =>
+    customerApi.get('/customer/payments/wallet/transactions', { params: { page, limit } }),
+  topupInitiate: (amount: number, gateway: PaymentGateway) =>
+    customerApi.post('/customer/payments/wallet/topup/initiate', { amount, gateway }),
+};
+
+// ── Customer Profile API ───────────────────────────────────────────────────────
+
+export type UpdateProfilePayload = {
+  name?: string; email?: string; dateOfBirth?: string;
+  gender?: 'M' | 'F' | 'O'; fcmToken?: string;
+};
+
+export type CreateAddressPayload = {
+  label: string; addressLine1: string; addressLine2?: string;
+  city: string; state: string; pincode: string; landmark?: string;
+  latitude: number; longitude: number; isDefault?: boolean;
+};
+
+export const customerProfileApi = {
+  get: () =>
+    customerApi.get('/customer/profile'),
+  update: (data: UpdateProfilePayload) =>
+    customerApi.patch('/customer/profile', data),
+  updateImage: (imageKey: string) =>
+    customerApi.patch('/customer/profile/image', { imageKey }),
+  // Addresses
+  getAddresses: () =>
+    customerApi.get('/customer/profile/addresses'),
+  addAddress: (data: CreateAddressPayload) =>
+    customerApi.post('/customer/profile/addresses', data),
+  updateAddress: (id: string, data: Partial<CreateAddressPayload>) =>
+    customerApi.patch(`/customer/profile/addresses/${id}`, data),
+  deleteAddress: (id: string) =>
+    customerApi.delete(`/customer/profile/addresses/${id}`),
+  setDefaultAddress: (id: string) =>
+    customerApi.patch(`/customer/profile/addresses/${id}/set-default`),
+  // Favorites
+  getFavRestaurants: () =>
+    customerApi.get('/customer/profile/favorites/restaurants'),
+  addFavRestaurant: (restaurantId: string) =>
+    customerApi.post(`/customer/profile/favorites/restaurants/${restaurantId}`),
+  removeFavRestaurant: (restaurantId: string) =>
+    customerApi.delete(`/customer/profile/favorites/restaurants/${restaurantId}`),
+  getFavItems: () =>
+    customerApi.get('/customer/profile/favorites/items'),
+  addFavItem: (menuItemId: string, restaurantId: string) =>
+    customerApi.post(`/customer/profile/favorites/items/${menuItemId}`, { restaurantId }),
+  removeFavItem: (menuItemId: string) =>
+    customerApi.delete(`/customer/profile/favorites/items/${menuItemId}`),
+};
+
+// ── Customer Reviews API ───────────────────────────────────────────────────────
+
+export type CreateReviewPayload = {
+  orderId: string; restaurantRating: number; deliveryRating?: number;
+  foodRating?: number; reviewText?: string; imageUrls?: string[]; isAnonymous?: boolean;
+};
+
+export const customerReviewsApi = {
+  create: (data: CreateReviewPayload) =>
+    customerApi.post('/customer/reviews', data),
+  byRestaurant: (restaurantId: string, page = 1, limit = 10) =>
+    api.get(`/customer/reviews/restaurant/${restaurantId}`, { params: { page, limit } }),
+  markHelpful: (reviewId: string) =>
+    customerApi.post(`/customer/reviews/${reviewId}/helpful`),
+};
+
+// ── Customer Support API ───────────────────────────────────────────────────────
+
+export type CustomerTicketType =
+  | 'MISSING_ITEM'
+  | 'WRONG_ORDER'
+  | 'DELIVERY_ISSUE'
+  | 'PAYMENT_ISSUE'
+  | 'REFUND_REQUEST'
+  | 'FOOD_QUALITY'
+  | 'OTHER';
+export type CustomerTicketPriority = 'LOW' | 'MEDIUM' | 'HIGH';
+
+export type CreateSupportTicketPayload = {
+  orderId?: string;
+  type: CustomerTicketType;
+  description: string;
+  priority?: CustomerTicketPriority;
+};
+
+export const customerSupportApi = {
+  createTicket: (data: CreateSupportTicketPayload) =>
+    customerApi.post('/customer/support/tickets', data),
+  getTickets: (page = 1, limit = 10) =>
+    customerApi.get('/customer/support/tickets', { params: { page, limit } }),
+  getTicket: (ticketId: string) =>
+    customerApi.get(`/customer/support/tickets/${ticketId}`),
+};
+
+// ── Admin Customers API ───────────────────────────────────────────────────────
+
+export type CustomerStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'BANNED';
+export type CustomerTier = 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM';
+
+export type AdminCustomerTicketStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+export type AdminTicketType =
+  | 'MISSING_ITEM' | 'WRONG_ORDER' | 'DELIVERY_ISSUE'
+  | 'PAYMENT_ISSUE' | 'REFUND_REQUEST' | 'FOOD_QUALITY' | 'OTHER';
+export type AdminTicketPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+export const adminCustomersApi = {
+  list: (page = 1, limit = 20, params: Record<string, string> = {}) =>
+    api.get('/admin/customers', { params: { page, limit, ...params } }),
+  stats: () => api.get('/admin/customers/stats'),
+  get: (customerId: string) =>
+    api.get(`/admin/customers/${customerId}`),
+  updateStatus: (customerId: string, status: CustomerStatus) =>
+    api.patch(`/admin/customers/${customerId}/status`, { status }),
+  getOrders: (customerId: string, page = 1, limit = 10, status?: string) =>
+    api.get(`/admin/customers/${customerId}/orders`, { params: { page, limit, ...(status ? { status } : {}) } }),
+  getTickets: (customerId: string, page = 1, limit = 10, status?: string) =>
+    api.get(`/admin/customers/${customerId}/tickets`, { params: { page, limit, ...(status ? { status } : {}) } }),
+};
+
+// ── Admin Orders API ───────────────────────────────────────────────────────────
+
+export const adminOrdersApi = {
+  list: (page = 1, limit = 20, params: Record<string, string> = {}) =>
+    api.get('/admin/orders', { params: { page, limit, ...params } }),
+  get: (orderId: string) =>
+    api.get(`/admin/orders/${orderId}`),
+};
+
+// ── Admin Tickets API ──────────────────────────────────────────────────────────
+
+export const adminTicketsApi = {
+  list: (page = 1, limit = 20, params: Record<string, string> = {}) =>
+    api.get('/admin/tickets', { params: { page, limit, ...params } }),
+  get: (ticketId: string) =>
+    api.get(`/admin/tickets/${ticketId}`),
+  update: (ticketId: string, data: { status?: AdminCustomerTicketStatus; priority?: AdminTicketPriority; adminNote?: string }) =>
+    api.patch(`/admin/tickets/${ticketId}`, data),
 };

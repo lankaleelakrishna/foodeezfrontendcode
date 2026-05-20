@@ -87,6 +87,7 @@ export default function BranchControlsPage() {
             <h1 className="text-3xl font-semibold">Branch Controls</h1>
             <p className="mt-2 text-slate-600">Loading branch details...</p>
           </div>
+        </div>
       </div>
     );
   }
@@ -99,6 +100,7 @@ export default function BranchControlsPage() {
             <h1 className="text-3xl font-semibold">Branch Controls</h1>
             <p className="mt-2 text-slate-600">Branch not found.</p>
           </div>
+        </div>
       </div>
     );
   }

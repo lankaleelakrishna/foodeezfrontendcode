@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { getUserRole, getUserDisplayName } from '../../lib/auth';
@@ -53,8 +54,8 @@ export default function TopHeader({ onMenuClick }: TopHeaderProps) {
 
       {/* Brand */}
       <div className="mr-4 flex items-center gap-2">
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--sb-bg)] p-1">
-          <img src="/foodeez-sidebar-logo.png" alt="Foodeez" className="h-full w-full object-contain" />
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--sb-bg)] p-1">
+          <Image src="/foodeez-sidebar-logo.png" alt="Foodeez" width={28} height={28} className="h-full w-full object-contain" />
         </div>
         <div className="hidden sm:block">
           <p className="text-[13px] font-bold leading-none text-[var(--tx)] tracking-tight">Foodeez</p>
@@ -114,7 +115,7 @@ export default function TopHeader({ onMenuClick }: TopHeaderProps) {
 
         {/* User */}
         <div className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 py-1 ml-1">
-          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[10px] font-bold text-[#1A110A]">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[10px] font-bold text-white">
             {initials}
           </div>
           <div className="hidden sm:block">

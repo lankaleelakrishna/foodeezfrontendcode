@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { api } from '../../../lib/api';
 import { getUserRole } from '../../../lib/auth';
 import AuthGuard from '../../components/AuthGuard';
@@ -249,8 +249,6 @@ function ReviewPanel({ restaurantId, restaurant, onSaved }: {
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
-
-import { useParams } from 'next/navigation';
 
 export default function RestaurantDetailPage() {
   const router = useRouter();

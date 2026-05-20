@@ -7,7 +7,7 @@ import TopHeader from './TopHeader';
 
 export default function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '';
-  const isAuthRoute = pathname.startsWith('/auth');
+  const isAuthRoute = pathname.startsWith('/auth') || pathname.startsWith('/customer');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   if (isAuthRoute) return <>{children}</>;

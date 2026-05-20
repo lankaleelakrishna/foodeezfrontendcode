@@ -55,13 +55,14 @@ function StatusBadge({ status }: { status: string }) {
 // ── Stat card ─────────────────────────────────────────────────────────────────
 
 function StatCard({
-  label, value, sub, gold, icon,
+  label, value, sub, gold, icon, href,
 }: {
   label: string; value: string | number; sub?: string; gold?: boolean;
   icon: React.ReactNode;
+  href?: string;
 }) {
-  return (
-    <div className={`relative overflow-hidden rounded-xl border p-4 transition-all hover:shadow-card-md ${
+  const card = (
+    <div className={`relative overflow-hidden rounded-xl border p-4 transition-all ${href ? 'cursor-pointer group hover:shadow-card-lg' : 'hover:shadow-card-md'} ${
       gold
         ? 'border-[var(--accent)]/30 bg-[var(--surface)] shadow-gold-sm'
         : 'border-[var(--border)] bg-[var(--surface)] shadow-card'
@@ -79,6 +80,8 @@ function StatCard({
       </div>
     </div>
   );
+
+  return href ? <Link href={href} className="block">{card}</Link> : card;
 }
 
 // ── Mini chart bar ────────────────────────────────────────────────────────────
@@ -197,21 +200,25 @@ export default function DashboardPage() {
               {/* Stat cards */}
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <StatCard
+                  href="/restaurants"
                   gold label="Total Restaurants" value={total}
                   sub={`${active} active right now`}
                   icon={<svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.75}><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}
                 />
                 <StatCard
+                  href="/restaurants?status=active"
                   label="Active" value={active}
                   sub={total > 0 ? `${Math.round((active / total) * 100)}% of fleet` : '—'}
                   icon={<svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.75}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>}
                 />
                 <StatCard
+                  href="/restaurants?status=onboarding"
                   label="In Onboarding" value={onboarding}
                   sub={`${pending} pending · ${review} in review`}
                   icon={<svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.75}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
                 />
                 <StatCard
+                  href="/restaurants?status=rejected"
                   label="Rejected" value={rejected}
                   sub="Needs attention"
                   icon={<svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.75}><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>}
@@ -234,7 +241,7 @@ export default function DashboardPage() {
                   <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--tx-3)]">Quick Actions</p>
                   <div className="space-y-2">
                     <Link href="/restaurants/register"
-                      className="flex items-center justify-between rounded-lg bg-[var(--accent)] px-3 py-2 text-[12px] font-semibold text-[#1A110A] transition hover:opacity-90">
+                      className="flex items-center justify-between rounded-lg bg-[var(--accent)] px-3 py-2 text-[12px] font-semibold text-white transition hover:opacity-90">
                       Register Restaurant
                       <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                     </Link>
@@ -349,7 +356,7 @@ export default function DashboardPage() {
                   <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--tx-3)]">Quick Actions</p>
                   <div className="space-y-2">
                     <Link href={`/restaurants/${d.restaurantId}`}
-                      className="flex items-center justify-between rounded-lg bg-[var(--accent)] px-3 py-2 text-[12px] font-semibold text-[#1A110A] transition hover:opacity-90">
+                      className="flex items-center justify-between rounded-lg bg-[var(--accent)] px-3 py-2 text-[12px] font-semibold text-white transition hover:opacity-90">
                       Manage Restaurant
                       <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                     </Link>

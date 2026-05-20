@@ -1,11 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { api } from '../../../../../lib/api';
 
-
-import { useParams } from 'next/navigation';
 
 export default function CreateBranchPage() {
   const router = useRouter();
@@ -45,6 +43,7 @@ export default function CreateBranchPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
               <span className="text-sm font-medium text-slate-700">Branch name</span>
+              <span className="ml-2 text-xs text-slate-400">As per FSSAI</span>
               <input value={form.name} onChange={(e) => handleChange('name', e.target.value)} required className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-900" />
             </label>
             <label className="block">
@@ -54,6 +53,7 @@ export default function CreateBranchPage() {
           </div>
           <label className="block">
             <span className="text-sm font-medium text-slate-700">Address</span>
+            <span className="ml-2 text-xs text-slate-400">As per FSSAI</span>
             <input value={form.address} onChange={(e) => handleChange('address', e.target.value)} required className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-900" />
           </label>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -92,6 +92,7 @@ export default function CreateBranchPage() {
             Save branch
           </button>
         </form>
+      </div>
     </div>
   );
 }

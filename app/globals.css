@@ -25,17 +25,30 @@ html[data-palette="emerald"]  { --accent:#10B981; --accent-2:#059669; --accent-b
   --tx-2:       #6B5C48;
   --tx-3:       #9E8C78;
 
-  /* Sidebar is always dark in both modes */
-  --sb-bg:      #120E0A;
-  --sb-2:       #1C1712;
-  --sb-bdr:     #2A221A;
-  --sb-tx:      #EAE0D0;
-  --sb-tx2:     #7A6A58;
-  --sb-hover:   #201A14;
+  /* Sidebar in light mode */
+  --sb-bg:      #FDFAF5;
+  --sb-2:       #EBE3D8;
+  --sb-bdr:     #D9CFBF;
+  --sb-tx:      #1A110A;
+  --sb-tx2:     #6B5C48;
+  --sb-hover:   #F2EBE0;
   --sb-active:  rgba(201, 161, 91, 0.13);
 
   --hdr-bg:     #FDFAF5;
   --hdr-bdr:    #D9CFBF;
+
+  /* Semantic status colours (light) */
+  --success-bg:    #ECFDF5; /* emerald-50 */
+  --success-border: #A7F3D0; /* emerald-200 */
+  --success-text:   #065F46; /* emerald-700 */
+
+  --warning-bg:    #FFFBEB; /* amber/yellow-50 */
+  --warning-border: #FDE68A; /* amber-200 */
+  --warning-text:   #92400E; /* amber-700 */
+
+  --danger-bg:     #FEF2F2; /* rose/red-50 */
+  --danger-border: #FECACA; /* rose/red-200 */
+  --danger-text:   #9F1239; /* rose-700 / red-600-ish */
 }
 
 /* ── Dark mode ───────────────────────────────────────────── */
@@ -50,8 +63,30 @@ html[data-palette="emerald"]  { --accent:#10B981; --accent-2:#059669; --accent-b
   --tx-2:       #9A8870;
   --tx-3:       #68584A;
 
+  /* Sidebar in dark mode */
+  --sb-bg:      #120E0A;
+  --sb-2:       #1C1712;
+  --sb-bdr:     #2A221A;
+  --sb-tx:      #EAE0D0;
+  --sb-tx2:     #7A6A58;
+  --sb-hover:   #201A14;
+  --sb-active:  rgba(201, 161, 91, 0.13);
+
   --hdr-bg:     #110D09;
   --hdr-bdr:    #2C2018;
+
+  /* Semantic status colours (dark) - tuned for contrast */
+  --success-bg:    rgba(16,185,129,0.08); /* subtle emerald */
+  --success-border: rgba(16,185,129,0.14);
+  --success-text:   #86efac; /* lighter green */
+
+  --warning-bg:    rgba(245,158,11,0.06); /* amber */
+  --warning-border: rgba(245,158,11,0.12);
+  --warning-text:   #FFD88A; /* warm */
+
+  --danger-bg:     rgba(240, 68, 104, 0.06); /* rose/red */
+  --danger-border: rgba(240, 68, 104, 0.12);
+  --danger-text:   #FCA5B4; /* lighter rose */
 }
 
 /* ── Base ──────────────────────────────────────────────────── */
@@ -89,3 +124,93 @@ body { transition: background-color 0.2s ease, color 0.2s ease; }
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+
+/* ── Theme compatibility helpers ─────────────────────────────
+   Map commonly used Tailwind color utility classes to the
+   theme CSS variables so existing markup (bg-white, text-slate-*)
+   responds to the light/dark variables above without editing
+   every component. Use sparingly; prefers updating components
+   to use CSS vars directly when convenient.
+*/
+
+/* background */
+.bg-white { background-color: var(--surface) !important; color: var(--tx) !important; }
+.bg-slate-50 { background-color: var(--surface-2) !important; color: var(--tx) !important; }
+.bg-slate-100 { background-color: var(--surface-2) !important; color: var(--tx) !important; }
+.bg-slate-200 { background-color: var(--surface) !important; color: var(--tx) !important; }
+.bg-\[\#f7f2ea\] { background-color: var(--bg) !important; color: var(--tx) !important; }
+
+/* borders */
+.border-slate-300, .border-slate-200 { border-color: var(--border) !important; }
+.border-slate-100 { border-color: var(--border-sub) !important; }
+
+/* text */
+.text-slate-900, .text-slate-950 { color: var(--tx) !important; }
+.text-slate-700, .text-slate-600 { color: var(--tx-2) !important; }
+.text-slate-500, .text-slate-400 { color: var(--tx-3) !important; }
+
+/* accent (gold) mappings used across the app */
+.bg-\[\#B88A2E\] { background-color: var(--accent) !important; color: var(--tx-2) !important; }
+.bg-\[\#B88A2E\]\/10 { background-color: color-mix(in srgb, var(--accent) 10%, transparent) !important; color: var(--tx) !important; }
+.text-\[\#B88A2E\] { color: var(--accent) !important; }
+.fill-\[\#B88A2E\] { fill: var(--accent-2) !important; }
+
+/* ensure inputs/buttons using white backgrounds remain readable */
+.rounded-\[2rem\], .rounded-2xl, .rounded-xl { color: inherit; }
+
+/* Semantic mappings for common status utilities so they respond to dark/light */
+.bg-emerald-50    { background-color: var(--success-bg) !important; color: var(--success-text) !important; }
+.border-emerald-200 { border-color: var(--success-border) !important; }
+.text-emerald-700 { color: var(--success-text) !important; }
+
+.bg-amber-50, .bg-amber-100, .bg-yellow-50, .bg-yellow-100 { background-color: var(--warning-bg) !important; color: var(--warning-text) !important; }
+.text-amber-700, .text-yellow-700 { color: var(--warning-text) !important; }
+.border-amber-200 { border-color: var(--warning-border) !important; }
+
+.bg-rose-50, .bg-rose-100, .bg-red-50 { background-color: var(--danger-bg) !important; color: var(--danger-text) !important; }
+.text-rose-700, .text-red-600, .text-red-700 { color: var(--danger-text) !important; }
+.border-rose-200, .border-red-200 { border-color: var(--danger-border) !important; }
+
+/* small utility shades used for dots/badges */
+.bg-emerald-500 { background-color: var(--success-text) !important; }
+.bg-rose-400, .bg-rose-500 { background-color: var(--danger-text) !important; }
+
+/* 500-level / opacity helpers (escape slashes) */
+.text-emerald-500 { color: var(--success-text) !important; }
+.text-rose-500, .text-red-500 { color: var(--danger-text) !important; }
+.border-rose-500, .border-emerald-500 { border-color: color-mix(in srgb, var(--danger-text) 20%, transparent) !important; }
+.bg-emerald-500\/10, .bg-emerald-500\/8, .bg-rose-500\/8, .bg-rose-500\/10 { background-color: color-mix(in srgb, var(--success-text) 10%, transparent) !important; }
+.border-rose-500\/20, .border-emerald-500\/20 { border-color: color-mix(in srgb, var(--danger-text) 20%, transparent) !important; }
+
+
+
+/* generic helpers that map slate-based utility styles to theme */
+.hover\:bg-slate-50:hover { background-color: var(--surface-2) !important; }
+.shadow-2xl, .shadow-sm, .shadow-lg { box-shadow: var(--card-shadow, rgba(0,0,0,0.06) 0 8px 24px) !important; }
+
+/* Form controls: ensure inputs, textareas, and selects are readable and theme-aware */
+input, textarea, select {
+  color: var(--tx) !important;
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+button {
+  color: var(--tx) !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--tx-3) !important;
+  opacity: 1 !important;
+}
+
+/* target elements that have inline styles and force theme colors */
+input[style], textarea[style], select[style], button[style] {
+  color: var(--tx) !important;
+  background-color: var(--surface) !important;
+}
+.placeholder-slate-400 { color: var(--tx-3) !important; opacity: 1 !important; }
+
+/* Specific low-contrast utility overrides */
+.text-slate-300, .text-slate-200, .text-slate-100 { color: var(--tx-3) !important; }
+.bg-white .text-slate-400, .bg-slate-50 .text-slate-400 { color: var(--tx-2) !important; }

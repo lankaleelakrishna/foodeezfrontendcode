@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { api } from '../../../../lib/api';
 
 type Document = {
@@ -10,16 +10,21 @@ type Document = {
   filename: string;
   status: string;
   uploadedAt: string;
+  s3Key?: string;
+  downloadUrl?: string;
 };
 
 const documentTypes = [
   { label: 'FSSAI', value: 'FSSAI' },
   { label: 'GST', value: 'GST' },
   { label: 'Bank', value: 'BANK' },
+  { label: 'PAN Card', value: 'PAN' },
 ];
 
-export default function RestaurantDocumentsPage({ params }: { params: { id: string } }) {
+export default function RestaurantDocumentsPage() {
   const router = useRouter();
+  const routeParams = useParams();
+  const id = routeParams.id as string;
   const [documents, setDocuments] = useState<Document[]>([]);
   const [type, setType] = useState('FSSAI');
   const [filename, setFilename] = useState('');
@@ -29,7 +34,7 @@ export default function RestaurantDocumentsPage({ params }: { params: { id: stri
 
   const fetchDocuments = async () => {
     try {
-      const response = await api.get(`/restaurants/${params.id}/documents`);
+      const response = await api.get(`/restaurants/${id}/documents`);
       setDocuments(response.data);
       setError('');
     } catch (err) {
@@ -39,13 +44,13 @@ export default function RestaurantDocumentsPage({ params }: { params: { id: stri
 
   useEffect(() => {
     fetchDocuments();
-  }, [params.id]);
+  }, [id]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setFilename(file.name);
-      setS3Key(`documents/${params.id}/${type.toLowerCase()}/${file.name}`);
+      setS3Key(`documents/${id}/${type.toLowerCase()}/${file.name}`);
       setMessage('');
       setError('');
     }
@@ -59,10 +64,10 @@ export default function RestaurantDocumentsPage({ params }: { params: { id: stri
     }
 
     try {
-      await api.post(`/restaurants/${params.id}/documents`, {
+      await api.post(`/restaurants/${id}/documents`, {
         type,
         filename,
-        s3Key: s3Key || `documents/${params.id}/${type.toLowerCase()}/${filename}`,
+        s3Key: s3Key || `documents/${id}/${type.toLowerCase()}/${filename}`,
       });
       setFilename('');
       setS3Key('');
@@ -73,19 +78,28 @@ export default function RestaurantDocumentsPage({ params }: { params: { id: stri
     }
   };
 
+  const openDocument = (document: Document) => {
+    const baseUrl = api.defaults.baseURL?.replace(/\/$/, '') ?? '';
+    const type = encodeURIComponent(document.type);
+    const filename = encodeURIComponent(document.filename);
+    const url = `${baseUrl}/documents/${id}/${type}/${filename}`;
+
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="space-y-6">
         <div className="rounded-3xl bg-white p-8 shadow-lg">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-3xl font-semibold">Restaurant Documents</h1>
-              <p className="mt-2 text-slate-600">Upload compliance and bank documents for restaurant {params.id}.</p>
+              <p className="mt-2 text-slate-600">Upload compliance and bank documents for restaurant {id}.</p>
             </div>
             <div className="flex flex-wrap gap-3">
               <button onClick={() => router.back()} className="rounded-2xl border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-50">
                 Back
               </button>
-              <button onClick={() => router.push(`/restaurants/${params.id}`)} className="rounded-2xl bg-slate-900 px-4 py-2 text-white hover:bg-slate-700">
+              <button onClick={() => router.push(`/restaurants/${id}`)} className="rounded-2xl bg-slate-900 px-4 py-2 text-white hover:bg-slate-700">
                 Restaurant
               </button>
             </div>
@@ -145,7 +159,12 @@ export default function RestaurantDocumentsPage({ params }: { params: { id: stri
             ) : (
               <div className="mt-4 space-y-4">
                 {documents.map((document) => (
-                  <div key={document.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <button
+                    key={document.id}
+                    type="button"
+                    onClick={() => openDocument(document)}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:bg-slate-100"
+                  >
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">{document.type}</p>
@@ -156,7 +175,7 @@ export default function RestaurantDocumentsPage({ params }: { params: { id: stri
                         <p>Uploaded: {new Date(document.uploadedAt).toLocaleDateString()}</p>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}

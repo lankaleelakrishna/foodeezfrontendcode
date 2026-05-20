@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { api } from '../../../../lib/api';
 import { getUserRole } from '../../../../lib/auth';
 import AuthGuard from '../../../components/AuthGuard';
@@ -24,8 +24,6 @@ function SkeletonCard() {
     </div>
   );
 }
-
-import { useParams } from 'next/navigation';
 
 export default function BranchesPage() {
   const router = useRouter();

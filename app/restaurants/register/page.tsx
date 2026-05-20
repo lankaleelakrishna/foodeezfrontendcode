@@ -95,9 +95,9 @@ function blockNumberExtras(e: React.KeyboardEvent<HTMLInputElement>) {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const BASE = 'mt-2 w-full rounded-2xl border px-4 py-3 outline-none transition focus:border-slate-900 text-sm';
-const OK   = `${BASE} border-slate-300`;
-const ERR  = `${BASE} border-rose-400 bg-rose-50`;
+const BASE = 'mt-2 w-full rounded-2xl border px-4 py-3 outline-none transition focus:border-slate-900 text-sm bg-[var(--surface)] text-[var(--tx)] border-[var(--border)]';
+const OK   = `${BASE} `;
+const ERR  = `${BASE} border-rose-400`;
 
 // ─── Field wrapper ────────────────────────────────────────────────────────────
 
@@ -209,10 +209,21 @@ export default function RestaurantRegisterPage() {
   return (
     <AuthGuard requiredRoles={['super_admin', 'sales_operator']}>
       <div className="flex justify-center">
-        <div className="w-full max-w-3xl rounded-3xl bg-white p-8 shadow-lg">
-          <h1 className="text-3xl font-semibold">Register Restaurant</h1>
-          <p className="mt-1 text-slate-500">Create a new restaurant partner. Login credentials are sent automatically.</p>
-          <p className="mt-1 text-xs text-slate-400">Fields marked <span className="text-rose-500">*</span> are required.</p>
+        <div className="w-full max-w-3xl rounded-3xl bg-[var(--surface)] p-8 shadow-lg">
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-3xl border border-slate-200 bg-white p-3 shadow-sm shadow-slate-200/70">
+              <img
+                src="/foodeez-sidebar-logo.png"
+                alt="FooDeeZ logo"
+                className="h-full w-full object-contain"
+              />
+            </div>
+            <div>
+              <h1 className="text-3xl font-semibold text-[var(--tx)]">Register Restaurant</h1>
+              <p className="mt-1 text-slate-500">Create a new restaurant partner. Login credentials are sent automatically.</p>
+            </div>
+          </div>
+          <p className="mt-4 text-xs text-slate-400">Fields marked <span className="text-rose-500">*</span> are required.</p>
 
           {submitStatus === 'success' && (
             <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-700">
@@ -315,9 +326,9 @@ export default function RestaurantRegisterPage() {
             {/* ── Location ── */}
             <div>
               <p className="mb-2 text-sm font-medium text-slate-700">Location coordinates</p>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] p-4 space-y-3">
                 <button type="button" onClick={captureLocation}
-                  className="rounded-2xl bg-slate-900 px-5 py-2.5 text-sm text-white hover:bg-slate-700 transition">
+                  className="rounded-2xl bg-[var(--accent)] px-5 py-2.5 text-sm text-white hover:bg-[var(--accent-2)] transition">
                   Auto-capture from browser
                 </button>
                 <div className="grid grid-cols-2 gap-3">
@@ -456,7 +467,7 @@ export default function RestaurantRegisterPage() {
             <button
               type="submit"
               disabled={submitStatus === 'loading' || submitStatus === 'success'}
-              className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-2xl bg-[var(--accent)] px-4 py-3 text-white transition hover:bg-[var(--accent-2)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitStatus === 'loading' ? 'Registering…' : 'Register Restaurant'}
             </button>

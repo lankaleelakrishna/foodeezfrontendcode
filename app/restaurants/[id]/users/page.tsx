@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { api } from '../../../../lib/api';
 
 const roles = [
@@ -19,8 +19,6 @@ type RestaurantUser = {
   isActive: boolean;
   createdAt: string;
 };
-
-import { useParams } from 'next/navigation';
 
 export default function RestaurantUsersPage() {
   const router = useRouter();

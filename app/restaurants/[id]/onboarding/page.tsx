@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { api } from '../../../../lib/api';
 
 type OnboardingStatus = {
@@ -19,8 +19,9 @@ const steps = [
   { label: 'Activation', description: 'Restaurant ready for ordering on the platform.' },
 ];
 
-export default function OnboardingPage({ params }: { params: { id: string } }) {
+export default function OnboardingPage() {
   const router = useRouter();
+  const params = useParams();
   const [status, setStatus] = useState<OnboardingStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

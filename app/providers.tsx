@@ -46,6 +46,21 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       document.documentElement.classList.toggle('dark', theme === 'dark');
     }
     window.localStorage.setItem('theme', theme);
+
+    // Clear any inline color/background styles on form controls so
+    // they correctly follow the new theme (users may have typed and
+    // inline styles could have been applied by components).
+    if (typeof document !== 'undefined') {
+      const els = document.querySelectorAll('input,textarea,select,button');
+      els.forEach((el) => {
+        try {
+          (el as HTMLElement).style.color = '';
+          (el as HTMLElement).style.backgroundColor = '';
+        } catch (e) {
+          // ignore
+        }
+      });
+    }
   }, [theme]);
 
   const toggleTheme = () => {

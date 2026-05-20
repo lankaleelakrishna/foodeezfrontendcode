@@ -21,6 +21,11 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: 'Foodeez — Restaurant Console',
   description: 'Restaurant partner management platform',
+  icons: {
+    icon: '/foodeez-sidebar-logo.png',
+    shortcut: '/foodeez-sidebar-logo.png',
+    apple: '/foodeez-sidebar-logo.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

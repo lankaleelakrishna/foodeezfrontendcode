@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -27,6 +28,9 @@ function IconSupport()     { return <Icon d="M12 22c5.523 0 10-4.477 10-10S17.52
 function IconPayout()      { return <Icon d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />; }
 function IconAnalytics()   { return <Icon d="M18 20V10M12 20V4M6 20v-6" />; }
 function IconLogout()      { return <Icon d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />; }
+function IconCustomers()   { return <Icon d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8z" />; }
+function IconOrders()      { return <Icon d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />; }
+function IconTickets()     { return <Icon d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />; }
 
 // ── Nav config ────────────────────────────────────────────────────────────────
 
@@ -54,6 +58,14 @@ const navSections: { title: string; links: NavLink[] }[] = [
       { label: 'Restaurants', href: '/restaurants', icon: IconRestaurant },
       { label: 'Payments',    href: '/payments',    icon: IconPayments,  role: 'super_admin' },
       { label: 'Users',       href: '/users',       icon: IconUsers,     role: 'super_admin' },
+    ],
+  },
+  {
+    title: 'Customers',
+    links: [
+      { label: 'Customers', href: '/admin/customers', icon: IconCustomers, role: 'super_admin' },
+      { label: 'Orders',    href: '/admin/orders',    icon: IconOrders,    role: 'super_admin' },
+      { label: 'Tickets',   href: '/admin/tickets',   icon: IconTickets,   role: 'super_admin' },
     ],
   },
   {
@@ -85,7 +97,7 @@ function SidebarInner({ userRole, roleLabel, email, displayName, initials, pathn
       <div className="mb-1 px-2 py-3">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#1E1710] border border-[var(--sb-bdr)] p-1.5">
-            <img src="/foodeez-sidebar-logo.png" alt="Foodeez" className="h-full w-full object-contain" />
+            <Image src="/foodeez-sidebar-logo.png" alt="Foodeez" width={28} height={28} className="h-full w-full object-contain" />
           </div>
           <div>
             <p className="text-[14px] font-bold leading-none tracking-tight text-[var(--sb-tx)]">Foodeez</p>
@@ -141,7 +153,7 @@ function SidebarInner({ userRole, roleLabel, email, displayName, initials, pathn
       {/* User */}
       <div className="px-2 pb-2">
         <div className="flex items-center gap-2.5 rounded-lg bg-[var(--sb-2)] px-2.5 py-2">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[10px] font-bold text-[#1A110A]">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[10px] font-bold text-white">
             {initials}
           </div>
           <div className="min-w-0 flex-1">
