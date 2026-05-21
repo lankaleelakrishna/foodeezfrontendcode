@@ -43,7 +43,7 @@ const ROLE_LABELS: Record<string, string> = {
   super_admin:        'Super Admin',
 };
 
-type NavLink = { label: string; href: string; icon: React.FC; role?: string };
+type NavLink = { label: string; href: string; icon: React.FC; role?: string | string[] };
 
 const navSections: { title: string; links: NavLink[] }[] = [
   {
@@ -56,6 +56,7 @@ const navSections: { title: string; links: NavLink[] }[] = [
     title: 'Manage',
     links: [
       { label: 'Restaurants', href: '/restaurants', icon: IconRestaurant },
+      { label: 'Orders',      href: '/restaurants/orders', icon: IconOrders, role: 'restaurant_admin' },
       { label: 'Payments',    href: '/payments',    icon: IconPayments,  role: 'super_admin' },
       { label: 'Users',       href: '/users',       icon: IconUsers,     role: 'super_admin' },
     ],
@@ -117,7 +118,11 @@ function SidebarInner({ userRole, roleLabel, email, displayName, initials, pathn
             </p>
             <div className="space-y-0.5">
               {section.links
-                .filter((item) => !item.role || item.role === userRole)
+                .filter((item) => {
+                  if (!item.role) return true;
+                  if (Array.isArray(item.role)) return userRole ? item.role.includes(userRole) : false;
+                  return item.role === userRole;
+                })
                 .map((item) => {
                   const Ico = item.icon;
                   const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'));

@@ -13,6 +13,9 @@ type TicketDetail = {
   description: string;
   adminNote?: string;
   customer?: { id: string; name: string; email: string; phone: string };
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
   orderId?: string;
   createdAt: string;
   updatedAt: string;
@@ -125,16 +128,15 @@ export default function TicketDetailPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl bg-white p-6 shadow-sm">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">Customer</h2>
-            {ticket.customer ? (
+            {(ticket.customer || ticket.customerName) ? (
               <>
                 <p
                   className="cursor-pointer font-medium text-slate-900 hover:underline"
-                  onClick={() => ticket.customer && router.push(`/admin/customers/${ticket.customer.id}`)}
+                  onClick={() => ticket.customer ? router.push(`/admin/customers/${ticket.customer.id}`) : undefined}
                 >
-                  {ticket.customer.name || '—'}
+                  {ticket.customer?.name ?? ticket.customerName ?? '—'}
                 </p>
-                <p className="text-sm text-slate-500">{ticket.customer.email}</p>
-                <p className="text-sm text-slate-500">{ticket.customer.phone}</p>
+                <p className="text-sm text-slate-500">{ticket.customer?.phone ?? ticket.customerPhone ?? ''}</p>
               </>
             ) : <p className="text-slate-500">—</p>}
           </div>

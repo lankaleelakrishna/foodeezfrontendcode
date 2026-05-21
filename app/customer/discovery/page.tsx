@@ -15,6 +15,21 @@ type Restaurant = {
   imageUrl?: string;
   isVeg?: boolean;
   distance?: number;
+  isOnline?: boolean;
+  status?: string;
+  branchStatus?: string;
+};
+
+const isRestaurantOnline = (restaurant: any) => {
+  if (typeof restaurant.isOnline === 'boolean') return restaurant.isOnline;
+  if (typeof restaurant.is_online === 'boolean') return restaurant.is_online;
+
+  const status = String(restaurant.status ?? restaurant.branchStatus ?? restaurant.branch_status ?? '')
+    .trim()
+    .toLowerCase();
+
+  if (!status) return true;
+  return ['online', 'open', 'active', 'available', 'serving'].includes(status);
 };
 
 export default function DiscoveryPage() {
@@ -47,6 +62,9 @@ export default function DiscoveryPage() {
       ...item,
       id: id,
       branchId: branchId,
+      isOnline: item.isOnline ?? item.is_online,
+      status: item.status ?? item.branchStatus ?? item.branch_status,
+      branchStatus: item.branchStatus ?? item.branch_status,
     };
   };
 
@@ -63,7 +81,9 @@ export default function DiscoveryPage() {
       const validRestaurants = Array.isArray(data)
         ? data
             .map(normalizeRestaurant)
-            .filter((r) => r.branchId && r.branchId !== 'undefined' && r.branchId.length > 0)
+            .filter((r) =>
+              r.branchId && r.branchId !== 'undefined' && r.branchId.length > 0 && isRestaurantOnline(r),
+            )
         : [];
       
       setRestaurants(validRestaurants);
@@ -97,7 +117,9 @@ export default function DiscoveryPage() {
       const validRestaurants = Array.isArray(data)
         ? data
             .map(normalizeRestaurant)
-            .filter((r) => r.branchId && r.branchId !== 'undefined' && r.branchId.length > 0)
+            .filter((r) =>
+              r.branchId && r.branchId !== 'undefined' && r.branchId.length > 0 && isRestaurantOnline(r),
+            )
         : [];
       
       setRestaurants(validRestaurants);

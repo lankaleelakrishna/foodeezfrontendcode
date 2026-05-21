@@ -12,6 +12,9 @@ type Ticket = {
   priority: AdminTicketPriority;
   description: string;
   customer?: { name: string; email: string; id: string };
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
   orderId?: string;
   createdAt: string;
   updatedAt: string;
@@ -155,8 +158,9 @@ export default function AdminTicketsPage() {
                         className="cursor-pointer hover:bg-slate-50 transition-colors"
                       >
                         <td className="py-3 pr-6">
-                          <p className="font-medium text-slate-900">{t.customer?.name || '—'}</p>
-                          <p className="text-slate-400">{t.customer?.email}</p>
+                          <p className="font-medium text-slate-900">
+                            {t.customer?.name ?? t.customerName ?? '—'}
+                          </p>
                         </td>
                         <td className="py-3 pr-6 text-slate-600">{t.type.replace(/_/g, ' ')}</td>
                         <td className="py-3 pr-6">

@@ -31,6 +31,7 @@ export default function BranchesPage() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [savingBranchId, setSavingBranchId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,6 +41,27 @@ export default function BranchesPage() {
       .catch(() => setError('Unable to load branches.'))
       .finally(() => setLoading(false));
   }, [params.id]);
+
+  const handleToggleOnline = async (branchId: string, currentOnline: boolean) => {
+    if (!canWrite) return;
+    setError('');
+    setSavingBranchId(branchId);
+
+    try {
+      const response = await api.patch(`/restaurants/${params.id}/branches/${branchId}`, {
+        isOnline: !currentOnline,
+      });
+      const updatedBranch = response.data;
+
+      setBranches((prev) => prev.map((branch) => (
+        branch.id === branchId ? { ...branch, isOnline: updatedBranch?.isOnline ?? !currentOnline } : branch
+      )));
+    } catch {
+      setError('Unable to update branch status.');
+    } finally {
+      setSavingBranchId(null);
+    }
+  };
 
   const canWrite = userRole === 'restaurant_admin' || userRole === 'restaurant_owner' ||
     userRole === 'restaurant_manager' || userRole === 'sales_operator' || userRole === 'super_admin';
@@ -108,11 +130,24 @@ export default function BranchesPage() {
                         )}
                       </div>
                     </div>
-                    <button
-                      onClick={() => router.push(`/restaurants/${params.id}/branches/${branch.id}/menu`)}
-                      className="rounded-2xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
-                      Manage menu
-                    </button>
+                    <div className="flex flex-wrap items-center gap-3">
+                      {canWrite && (
+                        <button
+                          onClick={() => handleToggleOnline(branch.id, branch.isOnline)}
+                          disabled={savingBranchId === branch.id}
+                          className={`rounded-2xl px-4 py-2.5 text-sm font-medium transition ${branch.isOnline ? 'bg-rose-100 text-rose-700 hover:bg-rose-200' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'}`}
+                        >
+                          {savingBranchId === branch.id
+                            ? 'Updating…'
+                            : branch.isOnline ? 'Go offline' : 'Go online'}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => router.push(`/restaurants/${params.id}/branches/${branch.id}/menu`)}
+                        className="rounded-2xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
+                        Manage menu
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))

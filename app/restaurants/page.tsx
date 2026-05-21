@@ -10,6 +10,7 @@ import AuthGuard from '../components/AuthGuard';
 type Restaurant = {
   id: string; name: string; ownerName: string; email: string; phone: string; status: string;
   cuisineTags?: string[];
+  isMine?: boolean;
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -41,7 +42,14 @@ export default function RestaurantsPage() {
   useEffect(() => {
     setUserRole(getUserRole());
     api.get('/restaurants')
-      .then((r) => setRestaurants(r.data))
+      .then((r) => {
+        // Sort so user's own restaurant appears first
+        const sorted = [...r.data].sort((a, b) => {
+          if (a.isMine === b.isMine) return 0;
+          return a.isMine ? -1 : 1;
+        });
+        setRestaurants(sorted);
+      })
       .catch(() => setError('Unable to load restaurant list.'))
       .finally(() => setLoading(false));
   }, []);
@@ -149,33 +157,69 @@ export default function RestaurantsPage() {
               </div>
             ) : (
               filteredRestaurants.map((r) => (
-                <Link key={r.id} href={`/restaurants/${r.id}`}
-                  className="group block rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-3xl bg-amber-100 text-lg font-semibold text-amber-700">
-                      {r.name.charAt(0).toUpperCase()}
+                <div key={r.id}>
+                  {r.isMine ? (
+                    <Link href={`/restaurants/${r.id}`}
+                      className="group block rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-3xl bg-amber-100 text-lg font-semibold text-amber-700">
+                          {r.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                            ★ My Restaurant
+                          </span>
+                          <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${STATUS_COLORS[r.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                            {r.status}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-6">
+                        <h2 className="text-xl font-semibold text-slate-900">{r.name}</h2>
+                        <p className="mt-2 text-sm text-slate-500">
+                          {r.cuisineTags?.[0] ?? 'Partner restaurant'}
+                        </p>
+                        <p className="mt-3 text-sm text-slate-400">{r.ownerName}</p>
+                      </div>
+                      <div className="mt-6 flex flex-col gap-2 border-t border-slate-100 pt-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+                        <span className="inline-flex min-w-0 items-center gap-2 truncate">
+                          <svg viewBox="0 0 20 20" className="h-4 w-4 flex-shrink-0 fill-[#B88A2E]" aria-hidden="true">
+                            <path d="M10 1.5l2.98 6.04 6.67.97-4.82 4.7 1.14 6.63L10 15.77 4.03 13.9l1.14-6.63L.35 8.51l6.67-.97L10 1.5z" />
+                          </svg>
+                          <span className="truncate">{r.email}</span>
+                        </span>
+                        <span className="truncate">{r.phone}</span>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-3xl bg-amber-100 text-lg font-semibold text-amber-700">
+                          {r.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${STATUS_COLORS[r.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                          {r.status}
+                        </span>
+                      </div>
+                      <div className="mt-6">
+                        <h2 className="text-xl font-semibold text-slate-900">{r.name}</h2>
+                        <p className="mt-2 text-sm text-slate-500">
+                          {r.cuisineTags?.[0] ?? 'Partner restaurant'}
+                        </p>
+                        <p className="mt-3 text-sm text-slate-400">{r.ownerName}</p>
+                      </div>
+                      <div className="mt-6 flex flex-col gap-2 border-t border-slate-100 pt-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+                        <span className="inline-flex min-w-0 items-center gap-2 truncate">
+                          <svg viewBox="0 0 20 20" className="h-4 w-4 flex-shrink-0 fill-[#B88A2E]" aria-hidden="true">
+                            <path d="M10 1.5l2.98 6.04 6.67.97-4.82 4.7 1.14 6.63L10 15.77 4.03 13.9l1.14-6.63L.35 8.51l6.67-.97L10 1.5z" />
+                          </svg>
+                          <span className="truncate">{r.email}</span>
+                        </span>
+                        <span className="truncate">{r.phone}</span>
+                      </div>
                     </div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${STATUS_COLORS[r.status] ?? 'bg-slate-100 text-slate-600'}`}>
-                      {r.status}
-                    </span>
-                  </div>
-                  <div className="mt-6">
-                    <h2 className="text-xl font-semibold text-slate-900">{r.name}</h2>
-                    <p className="mt-2 text-sm text-slate-500">
-                      {r.cuisineTags?.[0] ?? 'Partner restaurant'}
-                    </p>
-                    <p className="mt-3 text-sm text-slate-400">{r.ownerName}</p>
-                  </div>
-                  <div className="mt-6 flex flex-col gap-2 border-t border-slate-100 pt-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-                    <span className="inline-flex min-w-0 items-center gap-2 truncate">
-                      <svg viewBox="0 0 20 20" className="h-4 w-4 flex-shrink-0 fill-[#B88A2E]" aria-hidden="true">
-                        <path d="M10 1.5l2.98 6.04 6.67.97-4.82 4.7 1.14 6.63L10 15.77 4.03 13.9l1.14-6.63L.35 8.51l6.67-.97L10 1.5z" />
-                      </svg>
-                      <span className="truncate">{r.email}</span>
-                    </span>
-                    <span className="truncate">{r.phone}</span>
-                  </div>
-                </Link>
+                  )}
+                </div>
               ))
             )}
           </div>
@@ -183,4 +227,4 @@ export default function RestaurantsPage() {
       </div>
     </AuthGuard>
   );
-}
+} 

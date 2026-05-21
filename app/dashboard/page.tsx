@@ -55,18 +55,26 @@ function StatusBadge({ status }: { status: string }) {
 // ── Stat card ─────────────────────────────────────────────────────────────────
 
 function StatCard({
-  label, value, sub, gold, icon, href,
+  label, value, sub, gold, icon, href, onClick, selected,
 }: {
   label: string; value: string | number; sub?: string; gold?: boolean;
   icon: React.ReactNode;
   href?: string;
+  onClick?: () => void;
+  selected?: boolean;
 }) {
   const card = (
-    <div className={`relative overflow-hidden rounded-xl border p-4 transition-all ${href ? 'cursor-pointer group hover:shadow-card-lg' : 'hover:shadow-card-md'} ${
-      gold
-        ? 'border-[var(--accent)]/30 bg-[var(--surface)] shadow-gold-sm'
-        : 'border-[var(--border)] bg-[var(--surface)] shadow-card'
-    }`}>
+    <div
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={onClick ? (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onClick(); } } : undefined}
+      className={`relative overflow-hidden rounded-xl border p-4 transition-all ${onClick ? 'cursor-pointer focus:outline-none focus-visible:ring-0 active:bg-[var(--surface)]' : ''} ${
+        gold
+          ? 'border-[var(--accent)]/30 bg-[var(--surface)] shadow-gold-sm'
+          : 'border-[var(--border)] bg-[var(--surface)] shadow-card'
+      } ${selected ? 'border-[var(--border)] bg-emerald-50 text-emerald-900' : ''}`}
+    >
       {/* Corner accent */}
       <div className={`absolute right-0 top-0 h-16 w-16 rounded-bl-3xl ${gold ? 'bg-[var(--accent-muted)]' : 'bg-[var(--surface-2)]'}`} />
 
@@ -125,6 +133,7 @@ export default function DashboardPage() {
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState('');
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [branchStatusFilter, setBranchStatusFilter] = useState<'all' | 'online' | 'offline'>('all');
   const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
 
   useEffect(() => {
@@ -316,15 +325,30 @@ export default function DashboardPage() {
             <>
               {/* Stat cards */}
               <div className="grid gap-3 sm:grid-cols-3">
-                <StatCard gold label="Total Branches" value={d.totalBranches}
+                <StatCard
+                  gold
+                  label="Total Branches"
+                  value={d.totalBranches}
                   sub={`${d.activeBranches} online · ${d.offlineBranches} offline`}
                   icon={<svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.75}><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>}
+                  onClick={() => setBranchStatusFilter('all')}
+                  selected={branchStatusFilter === 'all'}
                 />
-                <StatCard label="Online" value={d.activeBranches} sub="Currently serving orders"
+                <StatCard
+                  label="Online"
+                  value={d.activeBranches}
+                  sub="Currently serving orders"
                   icon={<svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.75}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>}
+                  onClick={() => setBranchStatusFilter('online')}
+                  selected={branchStatusFilter === 'online'}
                 />
-                <StatCard label="Offline" value={d.offlineBranches} sub="Not accepting orders"
+                <StatCard
+                  label="Offline"
+                  value={d.offlineBranches}
+                  sub="Not accepting orders"
                   icon={<svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.75}><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>}
+                  onClick={() => setBranchStatusFilter('offline')}
+                  selected={branchStatusFilter === 'offline'}
                 />
               </div>
 
@@ -370,34 +394,48 @@ export default function DashboardPage() {
               </div>
 
               {/* Branch list */}
-              {d.branchMetrics.length > 0 && (
-                <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-card">
-                  <div className="border-b border-[var(--border-sub)] px-4 py-3">
-                    <p className="text-[13px] font-semibold text-[var(--tx)]">Branch Status</p>
-                  </div>
-                  <div className="divide-y divide-[var(--border-sub)]">
-                    {d.branchMetrics.map((b) => (
-                      <div key={b.id} className="flex items-center justify-between px-4 py-3">
-                        <div>
-                          <p className="text-[13px] font-semibold text-[var(--tx)]">{b.name}</p>
-                          <p className="mt-0.5 text-[11px] text-[var(--tx-3)]">
-                            {b.openingTime && b.closingTime ? `${b.openingTime} – ${b.closingTime}` : 'Hours not set'}
-                            {b.busyMode ? ' · Busy mode' : ''}
-                            {b.temporaryClosure ? ' · Temporarily closed' : ''}
-                          </p>
-                        </div>
-                        <span className={`rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                          b.isOnline
-                            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
-                            : 'border-[var(--border)] bg-[var(--surface-2)] text-[var(--tx-3)]'
-                        }`}>
-                          {b.isOnline ? 'Online' : 'Offline'}
-                        </span>
+              {d.branchMetrics.length > 0 && (() => {
+                const filteredBranchMetrics = d.branchMetrics.filter((b) => {
+                  if (branchStatusFilter === 'online') return b.isOnline;
+                  if (branchStatusFilter === 'offline') return !b.isOnline;
+                  return true;
+                });
+
+                return (
+                  <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-card">
+                    <div className="border-b border-[var(--border-sub)] px-4 py-3">
+                      <p className="text-[13px] font-semibold text-[var(--tx)]">Branch Status</p>
+                    </div>
+                    {filteredBranchMetrics.length === 0 ? (
+                      <div className="px-4 py-6 text-sm text-slate-500">
+                        No {branchStatusFilter === 'online' ? 'online' : branchStatusFilter === 'offline' ? 'offline' : ''} branches found.
                       </div>
-                    ))}
+                    ) : (
+                      <div className="divide-y divide-[var(--border-sub)]">
+                        {filteredBranchMetrics.map((b) => (
+                          <div key={b.id} className="flex items-center justify-between px-4 py-3">
+                            <div>
+                              <p className="text-[13px] font-semibold text-[var(--tx)]">{b.name}</p>
+                              <p className="mt-0.5 text-[11px] text-[var(--tx-3)]">
+                                {b.openingTime && b.closingTime ? `${b.openingTime} – ${b.closingTime}` : 'Hours not set'}
+                                {b.busyMode ? ' · Busy mode' : ''}
+                                {b.temporaryClosure ? ' · Temporarily closed' : ''}
+                              </p>
+                            </div>
+                            <span className={`rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                              b.isOnline
+                                ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
+                                : 'border-[var(--border)] bg-[var(--surface-2)] text-[var(--tx-3)]'
+                            }`}>
+                              {b.isOnline ? 'Online' : 'Offline'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </>
           );
         })()}

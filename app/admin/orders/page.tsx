@@ -8,9 +8,21 @@ import { adminOrdersApi } from '../../../lib/api';
 type Order = {
   id: string;
   status: string;
-  totalAmount: number;
-  restaurant?: { name: string };
-  customer?: { name: string; email: string };
+  amount?: number;
+  totalAmount?: number;
+  restaurant?: {
+    name?: string;
+    displayName?: string;
+    restaurantName?: string;
+    title?: string;
+    display_name?: string;
+  } | string;
+  restaurantName?: string;
+  restaurantLabel?: string;
+  branch?: { name?: string; displayName?: string; restaurantName?: string } | string;
+  branchName?: string;
+  branchLabel?: string;
+  customer?: { name?: string; email?: string };
   createdAt: string;
 };
 
@@ -42,6 +54,54 @@ export default function AdminOrdersPage() {
   const [dateTo, setDateTo]     = useState('');
   const [page, setPage]         = useState(1);
 
+  // Safe number conversion + formatting
+  function toNumberSafe(v: any): number {
+    if (v == null) return 0;
+    if (typeof v === 'number') return v;
+    if (typeof v === 'string') {
+      const n = parseFloat(v as string);
+      return Number.isFinite(n) ? n : 0;
+    }
+    if (typeof v === 'object') {
+      if (typeof v.toNumber === 'function') {
+        try { return Number(v.toNumber()); } catch { /* fallthrough */ }
+      }
+      if (typeof v.toString === 'function') {
+        const n = parseFloat(v.toString());
+        if (Number.isFinite(n)) return n;
+      }
+    }
+    return 0;
+  }
+
+  const formatAmount = (v: any) => toNumberSafe(v).toFixed(2);
+
+  function getRestaurantLabel(o: Order): string {
+    if (o.branchLabel) return o.branchLabel;
+    if (o.restaurantLabel) return o.restaurantLabel;
+    const restaurant = o.restaurant;
+    if (typeof restaurant === 'string') return restaurant;
+    if (restaurant) {
+      return (
+        restaurant.name ||
+        restaurant.displayName ||
+        restaurant.restaurantName ||
+        restaurant.title ||
+        restaurant.display_name ||
+        o.restaurantName ||
+        o.branchName ||
+        ''
+      );
+    }
+
+    if (typeof o.branch === 'string') return o.branch;
+    if (o.branch) {
+      return o.branch.name || o.branch.displayName || o.branch.restaurantName || o.branchName || '';
+    }
+
+    return o.restaurantName || o.branchName || '—';
+  }
+
   const load = useCallback(async (p = 1) => {
     setLoading(true);
     setError('');
@@ -52,7 +112,11 @@ export default function AdminOrdersPage() {
       if (dateFrom) params.dateFrom = dateFrom;
       if (dateTo)   params.dateTo   = dateTo;
       const { data } = await adminOrdersApi.list(p, 20, params);
-      setOrders(data.data ?? data);
+      const ordersData = (data.data ?? data).map((order: any) => ({
+        ...order,
+        amount: order.amount ?? order.grandTotal ?? order.totalAmount ?? 0,
+      }));
+      setOrders(ordersData);
       if (data.meta) setMeta(data.meta);
     } catch {
       setError('Failed to load orders.');
@@ -143,13 +207,13 @@ export default function AdminOrdersPage() {
                           <p className="font-medium text-slate-900">{o.customer?.name || '—'}</p>
                           <p className="text-slate-400">{o.customer?.email}</p>
                         </td>
-                        <td className="py-3 pr-6 text-slate-600">{o.restaurant?.name ?? '—'}</td>
+                        <td className="py-3 pr-6 text-slate-600">{getRestaurantLabel(o)}</td>
                         <td className="py-3 pr-6">
                           <span className={`rounded-full px-3 py-0.5 text-xs font-medium ${STATUS_COLORS[o.status] ?? 'bg-slate-100 text-slate-600'}`}>
                             {o.status}
                           </span>
                         </td>
-                        <td className="py-3 pr-6 text-slate-700">₹{(o.totalAmount ?? 0).toFixed(2)}</td>
+                        <td className="py-3 pr-6 text-slate-700">₹{formatAmount(o.amount ?? o.totalAmount)}</td>
                         <td className="py-3 text-slate-400">{new Date(o.createdAt).toLocaleDateString()}</td>
                       </tr>
                     ))}

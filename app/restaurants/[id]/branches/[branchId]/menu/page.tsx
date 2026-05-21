@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { api, menuApi, MenuPricingRuleType, MenuPricingValueType } from '../../../../../../lib/api';
 import { getUserRole } from '../../../../../../lib/auth';
 import AuthGuard from '../../../../../components/AuthGuard';

@@ -79,7 +79,7 @@ export default function CustomerDetailPage() {
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState('');
 
-  const [tab, setTab]             = useState<Tab>('orders');
+  const [tab, setTab]             = useState<Tab>('tickets');
 
   const [orders, setOrders]       = useState<Order[]>([]);
   const [orderMeta, setOrderMeta] = useState<Meta>({ total: 0, page: 1, limit: 10, totalPages: 1 });
@@ -94,6 +94,28 @@ export default function CustomerDetailPage() {
   const [statusUpdate, setStatusUpdate] = useState<CustomerStatus | ''>('');
   const [updating, setUpdating]         = useState(false);
   const [updateMsg, setUpdateMsg]       = useState('');
+
+  // Safely convert various numeric shapes (number, string, Decimal, etc.) to a JS number
+  function toNumberSafe(v: any): number {
+    if (v == null) return 0;
+    if (typeof v === 'number') return v;
+    if (typeof v === 'string') {
+      const n = parseFloat(v as string);
+      return Number.isFinite(n) ? n : 0;
+    }
+    if (typeof v === 'object') {
+      if (typeof v.toNumber === 'function') {
+        try { return Number(v.toNumber()); } catch { /* fallthrough */ }
+      }
+      if (typeof v.toString === 'function') {
+        const n = parseFloat(v.toString());
+        if (Number.isFinite(n)) return n;
+      }
+    }
+    return 0;
+  }
+
+  const formatAmount = (v: any) => toNumberSafe(v).toFixed(2);
 
   useEffect(() => {
     adminCustomersApi.get(customerId)
@@ -195,13 +217,6 @@ export default function CustomerDetailPage() {
                 >
                   {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
-                <button
-                  onClick={handleStatusUpdate}
-                  disabled={updating || statusUpdate === customer.status}
-                  className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 transition disabled:opacity-50"
-                >
-                  {updating ? 'Saving…' : 'Update'}
-                </button>
               </div>
               {updateMsg && <p className="text-xs text-slate-500">{updateMsg}</p>}
             </div>
@@ -216,11 +231,11 @@ export default function CustomerDetailPage() {
           </div>
           <div className="rounded-2xl bg-white p-5 shadow-sm">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Total Spend</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">₹{(customer.totalSpend ?? 0).toFixed(2)}</p>
+            <p className="mt-1 text-2xl font-bold text-slate-900">₹{formatAmount(customer.totalSpend)}</p>
           </div>
           <div className="rounded-2xl bg-white p-5 shadow-sm">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Wallet Balance</p>
-            <p className="mt-1 text-2xl font-bold text-emerald-600">₹{(customer.wallet?.balance ?? 0).toFixed(2)}</p>
+            <p className="mt-1 text-2xl font-bold text-emerald-600">₹{formatAmount(customer.wallet?.balance)}</p>
           </div>
         </div>
 
@@ -269,12 +284,12 @@ export default function CustomerDetailPage() {
         {/* Tabs */}
         <div className="rounded-3xl bg-white p-6 shadow-sm">
           <div className="mb-5 flex gap-1 border-b border-slate-100 pb-1">
-            {(['orders', 'tickets'] as Tab[]).map((t) => (
+            {(['tickets'] as Tab[]).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
                 className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
-                  tab === t ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-100'
+                  tab === t ? 'bg-slate-100 text-slate-700' : 'text-slate-500 hover:bg-slate-100'
                 }`}
               >
                 {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -315,7 +330,7 @@ export default function CustomerDetailPage() {
                               {o.status}
                             </span>
                           </td>
-                          <td className="py-3 pr-6 text-slate-700">₹{(o.totalAmount ?? 0).toFixed(2)}</td>
+                          <td className="py-3 pr-6 text-slate-700">₹{formatAmount(o.totalAmount)}</td>
                           <td className="py-3 text-slate-400">{new Date(o.createdAt).toLocaleDateString()}</td>
                         </tr>
                       ))}

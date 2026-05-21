@@ -240,7 +240,7 @@ export default function RestaurantRegisterPage() {
 
             {/* ── Basic info ── */}
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Restaurant name" required error={errors.name}>
+              <Field label="Restaurant name" required error={errors.name} hint="As per FSSAI">
                 <input {...p('name')} maxLength={100} autoComplete="organization" />
               </Field>
               <Field label="Owner name" required error={errors.ownerName}>
@@ -282,7 +282,7 @@ export default function RestaurantRegisterPage() {
             </div>
 
             {/* ── Address ── */}
-            <Field label="Address" required error={errors.address}>
+            <Field label="Address" required error={errors.address} hint="As per FSSAI">
               <input {...p('address')} maxLength={255} />
             </Field>
 
@@ -412,7 +412,7 @@ export default function RestaurantRegisterPage() {
             </div>
 
             {/* ── Business details ── */}
-            <Field label="Lead source" error={errors.leadSource}>
+            <Field label="Referral name" error={errors.leadSource}>
               <input {...p('leadSource')} maxLength={200} placeholder="Referral, marketing, sales lead…" />
             </Field>
 
@@ -453,12 +453,12 @@ export default function RestaurantRegisterPage() {
               <div className="flex flex-wrap gap-3">
                 <button type="button"
                   onClick={() => set('temporaryClosure', form.temporaryClosure === 'true' ? '' : 'true')}
-                  className={`rounded-2xl px-4 py-2.5 text-sm transition ${form.temporaryClosure === 'true' ? 'bg-[#B88A2E] text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>
+                  className={`rounded-2xl px-4 py-2.5 text-sm transition ${form.temporaryClosure === 'true' ? 'bg-emerald-500 text-white hover:bg-emerald-600' : 'bg-rose-500 text-white hover:bg-rose-600'}`}>
                   {form.temporaryClosure === 'true' ? 'Temporary closure: ON' : 'Temporary closure: OFF'}
                 </button>
                 <button type="button"
                   onClick={() => set('holidayMode', form.holidayMode === 'true' ? '' : 'true')}
-                  className={`rounded-2xl px-4 py-2.5 text-sm transition ${form.holidayMode === 'true' ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>
+                  className={`rounded-2xl px-4 py-2.5 text-sm transition ${form.holidayMode === 'true' ? 'bg-emerald-500 text-white hover:bg-emerald-600' : 'bg-rose-500 text-white hover:bg-rose-600'}`}>
                   {form.holidayMode === 'true' ? 'Holiday mode: ON' : 'Holiday mode: OFF'}
                 </button>
               </div>

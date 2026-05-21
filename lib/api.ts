@@ -657,6 +657,13 @@ export const adminOrdersApi = {
     api.get(`/admin/orders/${orderId}`),
 };
 
+export const restaurantOrdersApi = {
+  list: (page = 1, limit = 20, params: Record<string, string> = {}) =>
+    api.get('/restaurant/orders', { params: { page, limit, ...params } }),
+  get: (orderId: string) =>
+    api.get(`/restaurant/orders/${orderId}`),
+};
+
 // ── Admin Tickets API ──────────────────────────────────────────────────────────
 
 export const adminTicketsApi = {
